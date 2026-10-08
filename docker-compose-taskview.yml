@@ -4,20 +4,96 @@ networks:
     name: ${EXTERNAL_NETWORK:-core_dev_network}
 
 volumes:
-  taskview_data:
-    name: ${PROJECT_NAME:-core}_taskview_data
+  taskview_db_data:
+    name: ${PROJECT_NAME:-core}_taskview_db_data
+  taskview_api_logs:
+    name: ${PROJECT_NAME:-core}_taskview_api_logs
 
 services:
   # -----------------------------------------------------------
-  # Taskview Community
+  # 1. Base de datos dedicada PostgreSQL para TaskView
+  # -----------------------------------------------------------
+  taskview_db:
+    image: postgres:17-alpine
+    container_name: core_taskview_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${TASKVIEW_DB_USER:-tvdbuser}
+      POSTGRES_PASSWORD: ${TASKVIEW_DB_PASSWORD:-tvdbpass123}
+      POSTGRES_DB: ${TASKVIEW_DB_NAME:-taskviewdb}
+    volumes:
+      - taskview_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TASKVIEW_DB_USER:-tvdbuser} -d ${TASKVIEW_DB_NAME:-taskviewdb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 2. Migraciones de Base de Datos para TaskView (Se ejecuta al inicio)
+  # -----------------------------------------------------------
+  taskview_migration:
+    image: gimanhead/taskview-ce-db-migration:latest
+    container_name: core_taskview_migration
+    restart: "no"
+    depends_on:
+      taskview_db:
+        condition: service_healthy
+    environment:
+      DB_HOST: taskview_db
+      DB_USER: ${TASKVIEW_DB_USER:-tvdbuser}
+      DB_PASSWORD: ${TASKVIEW_DB_PASSWORD:-tvdbpass123}
+      DB_NAME: ${TASKVIEW_DB_NAME:-taskviewdb}
+      DB_PORT: 5432
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 3. Servidor API Backend de TaskView
+  # -----------------------------------------------------------
+  taskview_api:
+    image: gimanhead/taskview-ce-api-server:latest
+    container_name: core_taskview_api
+    restart: always
+    ports:
+      - "${TASKVIEW_API_PORT:-1401}:1401"
+    depends_on:
+      taskview_db:
+        condition: service_healthy
+      taskview_migration:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: taskview_db
+      DB_USER: ${TASKVIEW_DB_USER:-tvdbuser}
+      DB_PASSWORD: ${TASKVIEW_DB_PASSWORD:-tvdbpass123}
+      DB_NAME: ${TASKVIEW_DB_NAME:-taskviewdb}
+      DB_PORT: 5432
+      APP_PORT: 1401
+      JWT_ALG: "HS256"
+      JWT_SIGN: "${TASKVIEW_JWT_SECRET:-tv_jwt_secret_9921_local_dev}"
+      ACCESS_LIFE_TIME: "3d"
+      REFRESH_LIFE_TIME: "9d"
+      APP_URL: "http://localhost:${TASKVIEW_PORT:-3080}"
+      CORS_ALLOWED_ORIGINS: "http://localhost:${TASKVIEW_PORT:-3080},http://127.0.0.1:${TASKVIEW_PORT:-3080},http://localhost:${TASKVIEW_API_PORT:-1401}"
+    volumes:
+      - taskview_api_logs:/usr/src/app/logs
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 4. Aplicación Web Frontend de TaskView
   # -----------------------------------------------------------
   taskview:
-    image: gimanh/taskview-community:latest
+    image: gimanhead/taskview-ce-webapp:latest
     container_name: core_taskview
     restart: always
     ports:
-      - "${TASKVIEW_PORT:-3080}:3000"
-    volumes:
-      - taskview_data:/app/data
+      - "${TASKVIEW_PORT:-3080}:80"
+    environment:
+      TASKVIEW_API_URL: "http://localhost:${TASKVIEW_API_PORT:-1401}"
+    depends_on:
+      - taskview_api
     networks:
       - core_network
