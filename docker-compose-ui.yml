@@ -1,0 +1,49 @@
+
+networks:
+  core_network:
+    external: true
+    name: ${EXTERNAL_NETWORK:-core_dev_network}
+
+volumes:
+  pgadmin_data:
+    name: ${PROJECT_NAME:-core}_pgadmin_data
+
+services:
+  # -----------------------------------------------------------
+  # 1. pgAdmin 4 (Administrador PostgreSQL)
+  # -----------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: core_pgadmin
+    restart: always
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 2. Mongo Express (Administrador MongoDB)
+  # -----------------------------------------------------------
+  mongo-express:
+    image: mongo-express:latest
+    container_name: core_mongo_express
+    restart: always
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: core_mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-admin123}
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin123}
+    networks:
+      - core_network

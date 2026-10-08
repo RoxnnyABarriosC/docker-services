@@ -1,0 +1,67 @@
+
+networks:
+  core_network:
+    external: true
+    name: ${EXTERNAL_NETWORK:-core_dev_network}
+
+volumes:
+  sonar_data:
+    name: ${PROJECT_NAME:-core}_sonar_data
+  sonar_extensions:
+    name: ${PROJECT_NAME:-core}_sonar_extensions
+  sonar_db_data:
+    name: ${PROJECT_NAME:-core}_sonar_db_data
+
+services:
+  # -----------------------------------------------------------
+  # 1. Base de Datos Dedicada para SonarQube (PostgreSQL 13)
+  # -----------------------------------------------------------
+  sonar_db:
+    image: postgres:13-alpine
+    container_name: core_sonar_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${SONAR_DB_USER:-sonar}
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:-sonar123}
+      POSTGRES_DB: ${SONAR_DB_NAME:-sonar}
+    volumes:
+      - sonar_db_data:/var/lib/postgresql/data
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 2. Servidor SonarQube Community
+  # -----------------------------------------------------------
+  sonarqube:
+    image: sonarqube:community
+    container_name: core_sonarqube
+    restart: always
+    depends_on:
+      - sonar_db
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://core_sonar_db:5432/${SONAR_DB_NAME:-sonar}
+      SONAR_JDBC_USERNAME: ${SONAR_DB_USER:-sonar}
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:-sonar123}
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+      - sonar_extensions:/opt/sonarqube/extensions
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 3. SonarScanner CLI (Se ejecuta bajo demanda para analizar)
+  # -----------------------------------------------------------
+  sonar_scanner:
+    image: sonarsource/sonar-scanner-cli:latest
+    container_name: core_sonar_scanner
+    restart: "no"
+    depends_on:
+      - sonarqube
+    volumes:
+      # Monta la raíz del proyecto analizado (un nivel arriba de .docker)
+      - ../:/usr/src
+    working_dir: /usr/src
+    networks:
+      - core_network

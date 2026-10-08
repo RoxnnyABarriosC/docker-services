@@ -1,0 +1,25 @@
+networks:
+  core_network:
+    external: true
+    name: ${EXTERNAL_NETWORK:-core_dev_network}
+
+volumes:
+  floci_data:
+    name: ${PROJECT_NAME:-core}_floci_data
+
+services:
+  # -----------------------------------------------------------
+  # Floci (Emulador AWS: SQS, SNS, DynamoDB)
+  # -----------------------------------------------------------
+  floci:
+    image: floci/floci:latest
+    container_name: core_floci
+    restart: always
+    ports:
+      - "${FLOCI_PORT:-4566}:4566"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - floci_data:/data
+    networks:
+      - core_network
