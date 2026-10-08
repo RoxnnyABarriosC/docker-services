@@ -20,6 +20,7 @@ services:
     environment:
       - RUST_LOG=info
     volumes:
-      - floci_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - floci_data:/app/data
     networks:
       - core_network
