@@ -7,6 +7,8 @@ networks:
 volumes:
   pgadmin_data:
     name: ${PROJECT_NAME:-core}_pgadmin_data
+  chat2db_data:
+    name: ${PROJECT_NAME:-core}_chat2db_data
 
 services:
   # -----------------------------------------------------------
@@ -43,7 +45,22 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER:-admin}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-admin123}
       ME_CONFIG_MONGODB_AUTH_DATABASE: admin
-      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin123}
+      ME_CONFIG_BASICAUTH: "false"
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 3. Chat2DB (Gestor de BD con IA / SQL Copilot)
+  # -----------------------------------------------------------
+  chat2db:
+    image: chat2db/chat2db:latest
+    container_name: core_chat2db
+    restart: always
+    ports:
+      - "${CHAT2DB_PORT:-10825}:10825"
+    environment:
+      CHAT2DB_COMMUNITY_ENCRYPTION_KEY: ${CHAT2DB_ENCRYPTION_KEY}
+    volumes:
+      - chat2db_data:/root/.chat2db
     networks:
       - core_network

@@ -8,7 +8,7 @@ help:
 	@echo "  make services     - Levanta Postgres, Mongo (ReplicaSet) y Redis"
 	@echo "  make floci        - Levanta Floci (emulador AWS: SQS, SNS, DynamoDB)"
 	@echo "  make taskview     - Levanta Taskview Community"
-	@echo "  make ui           - Levanta pgAdmin 4 y Mongo Express (o Mongo-GUI)"
+	@echo "  make ui           - Levanta pgAdmin 4, Mongo Express y Chat2DB"
 	@echo "  make apps         - Levanta n8n"
 	@echo "  make sonar        - Levanta el servidor SonarQube y su base de datos"
 	@echo "  make sonar-scan   - Ejecuta el análisis de SonarScanner sobre el proyecto"
