@@ -5,7 +5,7 @@ export
 
 help:
 	@echo "Comandos disponibles:"
-	@echo "  make services     - Levanta Postgres, Mongo (ReplicaSet), Redis y MinIO"
+	@echo "  make services     - Levanta Postgres, Mongo (ReplicaSet) y Redis"
 	@echo "  make floci        - Levanta Floci (emulador AWS: SQS, SNS, DynamoDB)"
 	@echo "  make taskview     - Levanta Taskview Community"
 	@echo "  make ui           - Levanta pgAdmin 4 y Mongo Express (o Mongo-GUI)"

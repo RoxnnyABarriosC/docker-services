@@ -1,8 +1,8 @@
 
 networks:
   core_network:
+    external: true
     name: ${EXTERNAL_NETWORK:-core_dev_network}
-    driver: bridge
 
 volumes:
   postgres_data:
@@ -13,15 +13,13 @@ volumes:
     name: ${PROJECT_NAME:-core}_mongo_config
   redis_data:
     name: ${PROJECT_NAME:-core}_redis_data
-  minio_data:
-    name: ${PROJECT_NAME:-core}_minio_data
 
 services:
   # -----------------------------------------------------------
   # 1. PostgreSQL (Multi-DB + Extensiones)
   # -----------------------------------------------------------
   postgres:
-    image: postgres:latest
+    image: postgres:17
     container_name: core_postgres
     restart: always
     ports:
@@ -43,10 +41,20 @@ services:
     image: mongo:latest
     container_name: core_mongo
     restart: always
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    entrypoint:
+      - /bin/bash
+      - -c
+      - >
+        if [ ! -f /data/configdb/keyfile ]; then
+          openssl rand -base64 756 > /data/configdb/keyfile &&
+          chmod 400 /data/configdb/keyfile &&
+          chown mongodb:mongodb /data/configdb/keyfile;
+        fi;
+        exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/configdb/keyfile
     ports:
       - "${MONGO_PORT:-27017}:27017"
     environment:
+      GLIBC_TUNABLES: "glibc.pthread.rseq=1"
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-admin123}
     volumes:
@@ -63,9 +71,13 @@ services:
     restart: "no"
     networks:
       - core_network
+    environment:
+      GLIBC_TUNABLES: "glibc.pthread.rseq=1"
     entrypoint: >
       /bin/sh -c "
-      sleep 4;
+      until mongosh --host mongo:27017 -u ${MONGO_USER:-admin} -p ${MONGO_PASSWORD:-admin123} --authenticationDatabase admin --eval \"db.adminCommand('ping')\" >/dev/null 2>&1; do
+        sleep 2;
+      done;
       mongosh --host mongo:27017 -u ${MONGO_USER:-admin} -p ${MONGO_PASSWORD:-admin123} --authenticationDatabase admin --eval '
         try {
           rs.status();
@@ -93,40 +105,3 @@ services:
       - redis_data:/data
     networks:
       - core_network
-
-  # -----------------------------------------------------------
-  # 4. MinIO (S3 Storage) + Inicializador de Buckets
-  # -----------------------------------------------------------
-  minio:
-    image: minio/minio:latest
-    container_name: core_minio
-    restart: always
-    command: server /data --console-address ":9001"
-    ports:
-      - "${MINIO_PORT:-9000}:9000"       # API S3
-      - "${MINIO_CONSOLE_PORT:-9001}:9001" # Consola Web
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin123}
-    volumes:
-      - minio_data:/data
-    networks:
-      - core_network
-
-  minio_create_buckets:
-    image: minio/mc:latest
-    container_name: core_minio_buckets
-    depends_on:
-      - minio
-    restart: "no"
-    networks:
-      - core_network
-    entrypoint: >
-      /bin/sh -c "
-      sleep 3;
-      /usr/bin/mc alias set localminio http://minio:9000 ${MINIO_USER:-minioadmin} ${MINIO_PASSWORD:-minioadmin123};
-      /usr/bin/mc mb --ignore-existing localminio/public-bucket;
-      /usr/bin/mc mb --ignore-existing localminio/private-bucket;
-      /usr/bin/mc anonymous set download localminio/public-bucket;
-      exit 0;
-      "
