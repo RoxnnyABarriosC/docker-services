@@ -1,0 +1,50 @@
+
+networks:
+  core_network:
+    external: true
+    name: ${EXTERNAL_NETWORK:-core_dev_network}
+
+volumes:
+  ollama_data:
+    name: ${PROJECT_NAME:-core}_ollama_data
+  open_webui_data:
+    name: ${PROJECT_NAME:-core}_open_webui_data
+
+services:
+  # -----------------------------------------------------------
+  # 1. Ollama (Motor de inferencia LLM en local)
+  # -----------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: core_ollama
+    restart: always
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    environment:
+      OLLAMA_HOST: "0.0.0.0"
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-24h}
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-4}
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - core_network
+
+  # -----------------------------------------------------------
+  # 2. Open WebUI (Interfaz web estilo ChatGPT para Ollama)
+  # -----------------------------------------------------------
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: core_open_webui
+    restart: always
+    ports:
+      - "${OPEN_WEBUI_PORT:-3001}:8080"
+    environment:
+      OLLAMA_BASE_URL: "http://core_ollama:11434"
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-core_openwebui_secret_local}
+      ENV: "dev"
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - core_network
+    depends_on:
+      - ollama

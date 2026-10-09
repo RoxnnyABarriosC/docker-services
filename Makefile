@@ -1,7 +1,7 @@
 -include .env
 export
 
-.PHONY: help network services floci taskview ui apps sonar sonar-scan all stop down clean
+.PHONY: help network services floci taskview ui apps ai sonar sonar-scan all stop down clean
 
 help:
 	@echo "Comandos disponibles:"
@@ -10,6 +10,7 @@ help:
 	@echo "  make taskview     - Levanta Taskview Community"
 	@echo "  make ui           - Levanta pgAdmin 4, Mongo Express y Chat2DB"
 	@echo "  make apps         - Levanta n8n"
+	@echo "  make ai           - Levanta Ollama (LLaMA / IA local) y Open WebUI"
 	@echo "  make sonar        - Levanta el servidor SonarQube y su base de datos"
 	@echo "  make sonar-scan   - Ejecuta el análisis de SonarScanner sobre el proyecto"
 	@echo "  make all          - Levanta services, ui y apps"
@@ -66,6 +67,14 @@ apps: network
 		$(if $(filter build,$(MAKECMDGOALS)),--build,)
 
 # -----------------------------------------------------------
+# Capa de Inteligencia Artificial (Ollama + Open WebUI)
+# -----------------------------------------------------------
+ai: network
+	docker compose -f docker-compose-ai.yml \
+		$(if $(filter down,$(MAKECMDGOALS)),down,$(if $(filter stop,$(MAKECMDGOALS)),stop,up -d)) \
+		$(if $(filter build,$(MAKECMDGOALS)),--build,)
+
+# -----------------------------------------------------------
 # Capa de Auditoría y Calidad (SonarQube)
 # -----------------------------------------------------------
 sonar: network
@@ -83,6 +92,7 @@ all: services ui apps
 stop:
 	-docker compose -f docker-compose-ui.yml stop
 	-docker compose -f docker-compose-apps.yml stop
+	-docker compose -f docker-compose-ai.yml stop
 	-docker compose -f docker-compose-sonar.yml stop
 	-docker compose -f docker-compose-floci.yml stop
 	-docker compose -f docker-compose-taskview.yml stop
@@ -91,6 +101,7 @@ stop:
 down:
 	-docker compose -f docker-compose-ui.yml down
 	-docker compose -f docker-compose-apps.yml down
+	-docker compose -f docker-compose-ai.yml down
 	-docker compose -f docker-compose-sonar.yml down
 	-docker compose -f docker-compose-floci.yml down
 	-docker compose -f docker-compose-taskview.yml down
@@ -99,6 +110,7 @@ down:
 clean:
 	-docker compose -f docker-compose-ui.yml down -v --remove-orphans
 	-docker compose -f docker-compose-apps.yml down -v --remove-orphans
+	-docker compose -f docker-compose-ai.yml down -v --remove-orphans
 	-docker compose -f docker-compose-sonar.yml down -v --remove-orphans
 	-docker compose -f docker-compose-floci.yml down -v --remove-orphans
 	-docker compose -f docker-compose-taskview.yml down -v --remove-orphans
