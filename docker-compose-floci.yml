@@ -20,7 +20,6 @@ services:
     environment:
       - RUST_LOG=info
       - FLOCI_STORAGE_MODE=wall
-      - FLOCI_STORAGE_SERVICES_RDS_MODE=wall
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - floci_data:/app/data

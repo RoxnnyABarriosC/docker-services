@@ -87,9 +87,12 @@ sonar-scan: network
 # -----------------------------------------------------------
 # Comandos Globales
 # -----------------------------------------------------------
+TARGET_SERVICES := services floci taskview ui apps ai sonar
+
 all: services ui apps
 
 stop:
+ifeq ($(filter $(TARGET_SERVICES),$(MAKECMDGOALS)),)
 	-docker compose -f docker-compose-ui.yml stop
 	-docker compose -f docker-compose-apps.yml stop
 	-docker compose -f docker-compose-ai.yml stop
@@ -97,8 +100,10 @@ stop:
 	-docker compose -f docker-compose-floci.yml stop
 	-docker compose -f docker-compose-taskview.yml stop
 	-docker compose -f docker-compose-services.yml stop
+endif
 
 down:
+ifeq ($(filter $(TARGET_SERVICES),$(MAKECMDGOALS)),)
 	-docker compose -f docker-compose-ui.yml down
 	-docker compose -f docker-compose-apps.yml down
 	-docker compose -f docker-compose-ai.yml down
@@ -106,8 +111,10 @@ down:
 	-docker compose -f docker-compose-floci.yml down
 	-docker compose -f docker-compose-taskview.yml down
 	-docker compose -f docker-compose-services.yml down
+endif
 
 clean:
+ifeq ($(filter $(TARGET_SERVICES),$(MAKECMDGOALS)),)
 	-docker compose -f docker-compose-ui.yml down -v --remove-orphans
 	-docker compose -f docker-compose-apps.yml down -v --remove-orphans
 	-docker compose -f docker-compose-ai.yml down -v --remove-orphans
@@ -117,6 +124,7 @@ clean:
 	-docker compose -f docker-compose-services.yml down -v --remove-orphans
 	-docker image prune -f
 	-docker container prune -f
+endif
 
 %:
 	@:
