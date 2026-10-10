@@ -40,6 +40,7 @@ services:
       - "${OPEN_WEBUI_PORT:-3001}:8080"
     environment:
       OLLAMA_BASE_URL: "http://core_ollama:11434"
+      DEFAULT_MODELS: ${OLLAMA_DEFAULT_MODEL:-qwen2.5:3b}
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-core_openwebui_secret_local}
       ENV: "dev"
     volumes:
@@ -48,3 +49,4 @@ services:
       - core_network
     depends_on:
       - ollama
+

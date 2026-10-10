@@ -38,13 +38,13 @@ En una máquina con **64 GB de RAM** y procesador **AMD Ryzen (inferencia en CPU
 
 | Modelo | Tamaño en Disco / RAM | Velocidad en CPU | Uso Recomendado |
 | :--- | :--- | :--- | :--- |
-| **`llama3.2:3b`** ⭐ *(Recomendado)* | **~2.0 GB** | **~25 - 35 tokens/s** | **Ideal para emular IA:** rápido, inteligente, excelente siguiendo instrucciones y formateando JSON. |
-| **`llama3.2:1b`** | **~1.3 GB** | **~45 - 60 tokens/s** | Ultra-ligero, instantáneo. Ideal para tests unitarios, mocks de API y pipelines automatizados. |
-| **`llama3.1:8b`** | **~4.7 GB** | **~6 - 10 tokens/s** | Razonamiento profundo y mayor vocabulario. Apto para tareas complejas sin saturar la RAM. |
+| **`qwen2.5:3b`** ⭐ *(Recomendado)* | **~1.9 GB** | **~25 - 35 tokens/s** | **Ideal para emular IA en CPU:** rápido, altamente inteligente, excelente en español y formateando JSON. |
+| **`qwen2.5:1.5b`** | **~986 MB** | **~45 - 60 tokens/s** | Ultra-ligero e instantáneo en CPU. Ideal para tests unitarios y respuestas rápidas. |
 | **`qwen2.5-coder:3b`** | **~1.9 GB** | **~25 - 35 tokens/s** | Especializado en código, generación de scripts y funciones. |
+| **`llama3.1:8b`** | **~4.7 GB** | **~6 - 10 tokens/s** | Razonamiento profundo y mayor vocabulario para tareas complejas. |
 
 > [!TIP]
-> **¿Por qué evitar modelos de 70B en CPU?** Aunque caben en tus 64 GB de RAM, en CPU generarían apenas 1-2 tokens por segundo. Con `llama3.2:3b` obtienes respuestas casi instantáneas con un consumo mínimo de recursos.
+> **¿Por qué evitar modelos de 70B en CPU?** Aunque caben en tus 64 GB de RAM, en CPU generarían apenas 1-2 tokens por segundo. Con `qwen2.5:3b` obtienes respuestas casi instantáneas y estables con un consumo mínimo de recursos.
 
 ---
 
